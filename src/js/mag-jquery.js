@@ -459,20 +459,21 @@
 
     if (options.mode === 'inner') {
       $zoomedContainer = $noflow;
-      $noflow.addClass('mag-zoomed-bg');
     }
     else if (options.mode === 'outer') {
       if (! options.zoomedContainer) {
         throw new Error("Required 'zoomedContainer' option.");
       }
       $zoomedContainer = $(options.zoomedContainer);
-      $zoomedContainer.addClass('mag-zoomed-container');
-      $zoomedContainer.addClass('mag-zoomed-bg');
-      $zoomedContainer.attr('mag-theme', options.theme);
     }
     else {
       throw new Error("Invalid 'mode' option.");
     }
+
+    $zoomedContainer.attr('mag-theme', options.theme);
+    $zoomedContainer.addClass('mag-zoomed-container');
+    $zoomedContainer.addClass('mag-zoomed-bg');
+
 
     var $thumb = $('<div class="mag-thumb"></div>');
     $thumb.html($thumbChildren);
@@ -499,13 +500,11 @@
     this.$zoomed = $zoomed;
     this.$zoomedContainer = $zoomedContainer;
 
-    /*
-      Proxy events from container to zone for weird IE 9-10 behavior despite z-index.
-     */
-    $zoomedContainer.on('mousemove mousewheel', function (e){
-      var $t = $(this);
-      $zone.trigger(e.type, e);
-    });
+
+    that.proxyToZone($zoomedContainer)
+    if (options.mode === 'outer') {
+      that.proxyToZone($thumb);
+    }
 
 
     if (options.toggle) {
@@ -591,17 +590,21 @@
       else if (options.positionEvent === 'hold') {
         lazyRate = 0.2;
 
-        $zone.drag('start', function () {
+        $zone.on(that.eventName('dragstart'), function (e, dd, e2) {
+          e = typeof e2 === 'object' ? e2 : e;
           dragging = true;
           $el.addClass('mag--dragging');
         });
 
-        $zone.drag('end', function () {
+        $zone.on(that.eventName('dragend'), function (e, dd, e2) {
+          e = typeof e2 === 'object' ? e2 : e;
           dragging = false;
           $el.removeClass('mag--dragging');
         });
 
-        $zone.drag(function( e, dd ){
+        $zone.on(that.eventName('drag'), function (e, dd, e2) {
+          // console.log('drag', arguments, JSON.stringify(dd));
+          e = typeof e2 === 'object' ? e2 : e;
           var offset = $zone.offset();
           var ratios = ratioOffsetsFor($zone, e.pageX - offset.left, e.pageY - offset.top);
           adjustForMirror(ratios);
@@ -615,13 +618,11 @@
 
       var startFocus;
 
-      $el.on('dragstart', function () {
-        return false;
-      });
-
       if (options.mode === 'inner') {
 
-        $zone.drag('start', function () {
+        $zone.on(that.eventName('dragstart'), function (e, dd, e2) {
+          e = typeof e2 === 'object' ? e2 : e;
+          e.preventDefault();
           dragging = true;
           $el.addClass('mag--dragging');
           startFocus = {
@@ -630,13 +631,16 @@
           };
         });
 
-        $zone.drag('end', function () {
+        $zone.on(that.eventName('dragend'), function (e, dd, e2) {
+          e = typeof e2 === 'object' ? e2 : e;
           dragging = false;
           $el.removeClass('mag--dragging');
           startFocus = undefined;
         });
 
-        $zone.drag(function( e, dd ) {
+        $zone.on(that.eventName('drag'), function (e, dd, e2) {
+          // console.log('drag', arguments, JSON.stringify(dd));
+          e = typeof e2 === 'object' ? e2 : e;
           var offset = $zone.offset();
           ratios = ratioOffsetsFor($zone, dd.originalX - dd.offsetX, dd.originalY - dd.offsetY);
 
@@ -655,7 +659,8 @@
       }
       else {
 
-        $zone.drag('start', function () {
+        $zone.on(that.eventName('dragstart'), function (e, dd, e2) {
+          e = typeof e2 === 'object' ? e2 : e;
           dragging = true;
           $el.addClass('mag--dragging');
           startFocus = {
@@ -664,13 +669,15 @@
           };
         });
 
-        $zone.drag('end', function () {
+        $zone.on(that.eventName('dragend'), function (e, dd, e2) {
+          e = typeof e2 === 'object' ? e2 : e;
           dragging = false;
           $el.removeClass('mag--dragging');
           startFocus = undefined;
         });
 
-        $zone.drag(function( e, dd ) {
+        $zone.on(that.eventName('drag'), function (e, dd, e2) {
+          // console.log('drag', arguments, JSON.stringify(dd));
           var offset = $zone.offset();
           ratios = ratioOffsetsFor($zone, e.pageX - offset.left, e.pageY - offset.top);
 
@@ -842,6 +849,46 @@
 
 
   };
+
+
+  Magnificent.prototype.proxyToZone = function ($el) {
+    var that = this;
+    var $zone = that.$zone;
+    /*
+      Proxy events from container to zone for weird IE 9-10 behavior despite z-index.
+     */
+    var proxyEvents = [
+      'mousemove',
+      // 'mouseenter',
+      // 'mouseleave',
+      // 'mouseover',
+      // 'mouseout',
+      'click',
+      'touchstart',
+      'touchend',
+      'touchmove',
+      'touchcancel',
+      'mousewheel',
+      'draginit',
+      'dragstart',
+      'drag',
+      'dragend'
+    ];
+    var nsProxyEvents = $.map(proxyEvents, function (name) {
+      return that.eventName(name);
+    });
+    $el.on(nsProxyEvents.join(' '), function (e) {
+      var $t = $(this);
+      var args = Array.prototype.slice.call(arguments);
+      // console.log(['a', args[0], args[1], args[2], args[3], args[4], args[5]]);
+      e.triggered = true;
+      args.push(e);
+      args.unshift(that.eventName(e.type));
+      // console.log(['b', args[0], args[1], args[2], args[3], args[4], args[5]]);
+      $zone.trigger.apply($zone, args);
+    });
+  };
+
 
   Magnificent.prototype.destroy = function() {
     var that = this;
