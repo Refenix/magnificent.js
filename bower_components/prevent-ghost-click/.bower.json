@@ -33,6 +33,5 @@
   },
   "_source": "git://github.com/adjohnson916/prevent-ghost-click.js.git",
   "_target": "~0.0.0",
-  "_originalSource": "prevent-ghost-click",
-  "_direct": true
+  "_originalSource": "prevent-ghost-click"
 }

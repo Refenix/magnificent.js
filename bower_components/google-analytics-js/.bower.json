@@ -1,7 +1,7 @@
 {
   "name": "google-analytics-js",
   "description": "JavaScript mini library to track usage of injected script via Google Analytics.",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "homepage": "https://github.com/adjohnson916/google-analytics-js",
   "main": "gajs.js",
   "moduleType": [
@@ -24,14 +24,17 @@
     "test",
     "tests"
   ],
-  "_release": "0.0.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adjohnson916/google-analytics-js.git"
+  },
+  "_release": "0.0.1",
   "_resolution": {
     "type": "version",
-    "tag": "0.0.0",
-    "commit": "f7af907b0bdce7bb95516fa298400c46735ddf8b"
+    "tag": "0.0.1",
+    "commit": "bece9877f48aa5bc840a7de6929e0c096e32b2ee"
   },
   "_source": "git://github.com/adjohnson916/google-analytics-js.git",
   "_target": "~0.0.0",
-  "_originalSource": "google-analytics-js",
-  "_direct": true
+  "_originalSource": "google-analytics-js"
 }
