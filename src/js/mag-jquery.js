@@ -38,17 +38,18 @@
   $(':root').addClass('mag-js');
 
 
-  var normalizeOffsets = function (e) {
-    var offset = $(e.target).offset();
+  var normalizeOffsets = function (e, $target) {
+    $target = $target || $(e.target);
+    var offset = $target.offset();
     return {
       x: e.pageX - offset.left,
       y: e.pageY - offset.top
     };
   };
 
-  var ratioOffsets = function (e) {
-    var normOff = normalizeOffsets(e);
-    var $target = $(e.target);
+  var ratioOffsets = function (e, $target) {
+    $target = $target || $(e.target);
+    var normOff = normalizeOffsets(e, $target);
     return {
       x: normOff.x / $target.width(),
       y: normOff.y / $target.height()
@@ -118,8 +119,11 @@
     if (left) transform += ' translateX(' + left + ')';
     if (top) transform += ' translateY(' + top + ')';
 
+    css['-webkit-transform'] = transform;
+    css['-moz-transform'] = transform;
+    css['-ms-transform'] = transform;
+    css['-o-transform'] = transform;
     css.transform = transform;
-    // TODO: vendor prefixes?
 
     return css;
   };
@@ -153,9 +157,12 @@
       (left !== undefined ? left : 0) + ',' +
       (top !== undefined ? top : 0) +
       ',0)';
-    css.transform = transform;
-    // TODO: more vendor prefixes?
+
     css['-webkit-transform'] = transform;
+    css['-moz-transform'] = transform;
+    css['-ms-transform'] = transform;
+    css['-o-transform'] = transform;
+    css.transform = transform;
 
     css.width = '100%';
     css.height = '100%';
@@ -492,6 +499,14 @@
     this.$zoomed = $zoomed;
     this.$zoomedContainer = $zoomedContainer;
 
+    /*
+      Proxy events from container to zone for weird IE 9-10 behavior despite z-index.
+     */
+    $zoomedContainer.on('mousemove mousewheel', function (e){
+      var $t = $(this);
+      $zone.trigger(e.type, e);
+    });
+
 
     if (options.toggle) {
       if (options.initialShow === 'thumb') {
@@ -567,8 +582,9 @@
       if (options.positionEvent === 'move') {
         lazyRate = 0.2;
 
-        $zone.on(that.eventName('mousemove'), function(e){
-          var ratios = ratioOffsets(e);
+        $zone.on(that.eventName('mousemove'), function(e, e2){
+          e = e2 || e;
+          var ratios = ratioOffsets(e, $zone);
           adjustForMirror(ratios);
         });
       }
@@ -598,6 +614,10 @@
     else if (options.position === 'drag') {
 
       var startFocus;
+
+      $el.on('dragstart', function () {
+        return false;
+      });
 
       if (options.mode === 'inner') {
 
@@ -694,7 +714,7 @@
         lazyRate = 0.5;
 
         $zone.on(that.eventName('mousemove'), function(e){
-          ratios = ratioOffsets(e);
+          ratios = ratioOffsets(e, $zone);
         });
       }
       else if (options.positionEvent === 'hold') {
@@ -741,7 +761,8 @@
 
 
     if (options.position) {
-      $zone.on(that.eventName('mousewheel'), function (e) {
+      $zone.on(that.eventName('mousewheel'), function (e, e2) {
+        e = e2 || e;
         // console.log('mousewheel', {
         //   deltaX: e.deltaX,
         //   deltaY: e.deltaY,
@@ -829,19 +850,32 @@
 
     // Unbind and replace elements with originals.
 
+    that.off();
+
     if (that.$originalZoomedContainer && that.$zoomedContainer) {
-      // Turn off all events.
-      that.$zoomedContainer.off(that.eventName());
       // Replace
       that.$zoomedContainer.after(that.$originalZoomedContainer);
       that.$zoomedContainer.remove();
     }
 
-    // Turn off all events.
-    that.$el.off(that.eventName());
     // Replace
     that.$el.after(that.$originalEl);
     that.$el.remove();
+  };
+
+
+  Magnificent.prototype.off = function () {
+    var that = this;
+
+    if (that.$originalZoomedContainer && that.$zoomedContainer) {
+      // Turn off all events.
+      that.$zoomedContainer.off(that.eventName());
+    }
+
+    // Turn off all events.
+    that.$el.off(that.eventName());
+
+    return this;
   };
 
 
