@@ -501,7 +501,7 @@
     this.$zoomedContainer = $zoomedContainer;
 
 
-    that.proxyToZone($zoomedContainer)
+    that.proxyToZone($zoomedContainer);
     if (options.mode === 'outer') {
       that.proxyToZone($thumb);
     }
@@ -641,6 +641,15 @@
         $zone.on(that.eventName('drag'), function (e, dd, e2) {
           // console.log('drag', arguments, JSON.stringify(dd));
           e = typeof e2 === 'object' ? e2 : e;
+
+          // Modified plugin to improve touch functionality
+          if (e.originalEvent) {
+            if (e.originalEvent.scale !== 1) {
+              return;
+            }
+          }
+          //End of modification
+
           var offset = $zone.offset();
           ratios = ratioOffsetsFor($zone, dd.originalX - dd.offsetX, dd.originalY - dd.offsetY);
 
@@ -809,9 +818,26 @@
 
         hammertime.get('pinch').set({ enable: true });
 
-        // console.log('options.pos', options.position);
+        hammertime.on('pinch', function(e) {
+          e.preventDefault();
+
+          that.toggle.call(that, true);
+
+          var zoom = model.zoom;
+          var scale = e.scale || (e.originalEvent && e.originalEvent.scale);
+          zoom *= scale;
+          model.zoom = zoom;
+          that.compute();
+        });
+
         // if (options.position === 'mirror') {
         if (options.mode === 'inner') {
+
+          var pinch = hammertime.get('pinch');
+          var pan = hammertime.get('pan');
+
+          pinch.recognizeWith(pan);
+
           hammertime.on('pan', function (e) {
             e.preventDefault();
             // console.log('pan', e);
@@ -824,23 +850,6 @@
             model.focus.y += rate * e.deltaY;
           });
         }
-
-        hammertime.on('pinch', function(e) {
-          e.preventDefault();
-          // console.log('pinch', e);
-
-          that.toggle.call(that, true);
-
-          var rate = -0.01;
-          var zoom = model.zoom;
-          var delta = (e.deltaY + e.deltaX) / 2;
-          // delta = delta > 0 ? delta : Math.abs(delta);
-          delta *= rate;
-          delta += 1;
-          zoom *= delta;
-          model.zoom = zoom;
-          that.compute();
-        });
       }
     }
 
