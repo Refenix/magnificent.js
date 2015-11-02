@@ -223,12 +223,14 @@
    * @property {number} zoomRate - Rate at which to adjust zoom, from (0,∞). Default = 0.2.
    * @property {number} zoomMin - Minimum zoom level allowed, from (0,∞). Default = 2.
    * @property {number} zoomMax - Maximum zoom level allowed, from (0,∞). Default = 10.
+   * @property {number} dragRate - Rate at which to drag, from (0,∞). Default = 0.2.
    * @property {number} ratio - Ratio of outer (w/h) to inner (w/h) container ratios. Default = 1.
    * @property {boolean} constrainLens - Whether lens position is constrained. Default = true.
    * @property {boolean} constrainZoomed - Whether zoomed position is constrained. Default = false.
    * @property {boolean} toggle - Whether toggle display of zoomed vs. thumbnail upon interaction. Default = true.
    * @property {boolean} smooth - Whether the zoomed region should gradually approach target, rather than immediately. Default = true.
    * @property {string} cssMode - CSS mode to use for scaling and translating. Either '3d', '2d', or 'position'. Default = '3d'.
+   * @property {number} renderIntervalTime - Milliseconds for render loop interval. Adjust for performance vs. frame rate. Default = 20.
    * @property {MagModel} initial - Initial settings for model - focus, lens, zoom, etc.
    */
   Magnificent.prototype.options = {
@@ -242,9 +244,11 @@
     zoomMin: 1,
     zoomMax: 10,
     zoomRate: 0.2,
+    dragRate: 0.2,
     ratio: 1,
     toggle: true,
     smooth: true,
+    renderIntervalTime: 20,
     cssMode: '3d',
     eventNamespace: 'magnificent',
     dataNamespace: 'magnificent'
@@ -535,8 +539,8 @@
 
 
     var lazyRate = 0.25;
-    var renderLoopIntervalTime = 20;
-    var dragRate = 0.2;
+    var renderIntervalTime = options.renderIntervalTime;
+    var dragRate = options.dragRate;
     var zoomRate = options.zoomRate;
 
     var approach = function (enabled, thresh, rate, dest, src, props, srcProps) {
@@ -786,7 +790,7 @@
         // });
         e.preventDefault();
 
-        var rate = 0.2;
+        var rate = zoomRate;
         var zoom = model.zoom;
         var delta = (e.deltaY + e.deltaX) / 2;
         // if (e.deltaFactor) {
@@ -854,7 +858,7 @@
     }
 
 
-    var renderLoopInterval = setInterval(renderLoop, renderLoopIntervalTime);
+    var renderLoopInterval = setInterval(renderLoop, renderIntervalTime);
 
 
   };
